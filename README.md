@@ -52,7 +52,13 @@ Where a check overlaps with Splinter, it says so below.
 
 ## Install
 
-After the package is published to npm:
+No install needed — run it with `npx`:
+
+```bash
+npx supabase-grants scan supabase/migrations
+```
+
+Or install it globally:
 
 ```bash
 npm i -g supabase-grants
@@ -70,14 +76,14 @@ One runtime dependency: `pg`, used only by `live`.
 
 ## Commands
 
-The examples below use the installed `supabase-grants` command; from a clone, run
-`node bin/supabase-grants.mjs` instead.
+The examples below use `npx supabase-grants`; a global install drops the `npx` prefix, and from a clone,
+run `node bin/supabase-grants.mjs` instead.
 
 ### `scan` — static, no database
 
 ```bash
-supabase-grants scan supabase/migrations --md scan-report.md
-supabase-grants scan supabase/migrations --json --fail-on medium
+npx supabase-grants scan supabase/migrations --md scan-report.md
+npx supabase-grants scan supabase/migrations --json --fail-on medium
 ```
 
 Parses and replays every `*.sql` file in the directory (default `supabase/migrations`), building the
@@ -125,7 +131,7 @@ a migration file, are invisible to the static scan** — they show up only as wa
 ### `live` — read-only audit and a planned migration
 
 ```bash
-supabase-grants live --db "$DATABASE_URL" --plan least_privilege.sql --pin-defaults
+npx supabase-grants live --db "$DATABASE_URL" --plan least_privilege.sql --pin-defaults
 ```
 
 `--db` falls back to the `DATABASE_URL` environment variable. Use the **session-mode pooler** connection
@@ -177,8 +183,8 @@ to it as `least_privilege_rollback.sql`. **Nothing is ever executed** — the to
 ### `study` — numbers across many repos
 
 ```bash
-supabase-grants study --list repos.txt --out study --concurrency 4
-supabase-grants study --aggregate study --md STUDY.md
+npx supabase-grants study --list repos.txt --out study --concurrency 4
+npx supabase-grants study --aggregate study --md STUDY.md
 ```
 
 `--list` reads `owner/repo` lines. Every line is checked against `^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$` before
