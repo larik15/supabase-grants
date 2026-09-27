@@ -8,8 +8,15 @@
     "node": ">=20"
   },
   "bin": {
-    "supabase-grants": "./bin/supabase-grants.mjs"
+    "supabase-grants": "bin/supabase-grants.mjs"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "STUDY.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "node --test"
   },
