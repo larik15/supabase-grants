@@ -118,6 +118,14 @@ export function aggregateReports(records) {
   const unparsedCounts = reports.map(r => r.unparsed_statements?.total || 0);
   const warningCounts = reports.map(r => (r.warnings || []).length);
 
+  // Lower bound for "relies on legacy default grants": a repo whose
+  // migrations contain no GRANT statement at all (parsed or as the literal
+  // word inside a statement we couldn't parse) definitely has no explicit
+  // grant. reposMissingGrant (in percentRepos) is the upper bound: it also
+  // counts repos that do grant *something* but leave at least one table out.
+  const noGrantCount = reports.filter(r => !r.saw_grant_statement && !r.unparsed_contains_grant_keyword).length;
+  const grantLowerBound = { noGrantCount, reposScanned, percentNoGrant: pct(noGrantCount, reposScanned) };
+
   return {
     funnel,
     reposScanned,
@@ -132,6 +140,7 @@ export function aggregateReports(records) {
     percentRepos: shareOfRepos(reports),
     percentReposExcludingToy: shareOfRepos(nonToyReports),
     percentTables: shareOfTables(reports),
+    grantLowerBound,
     parserCoverage: {
       unparsedStatements: unparsedCounts.reduce((a, b) => a + b, 0),
       reposWithUnparsed: pct(unparsedCounts.filter(n => n > 0).length, reposScanned),
@@ -189,6 +198,13 @@ export function toStudyMarkdown(agg) {
   push(`| Condition | % of all repos (n=${agg.reposScanned}) | % excluding toy repos (n=${agg.nonToyRepoCount}) |`, '|---|---|---|');
   for (const [, key, label] of REPO_KINDS) push(`| ${label} | ${agg.percentRepos[key]}% | ${agg.percentReposExcludingToy[key]}% |`);
   push(`| At least one table with RLS disabled | ${agg.percentRepos.rlsDisabledTable}% | ${agg.percentReposExcludingToy.rlsDisabledTable}% |`);
+  push('');
+  push(
+    `Lower bound: ${agg.grantLowerBound.percentNoGrant}% of repos (${agg.grantLowerBound.noGrantCount} of ` +
+      `${agg.grantLowerBound.reposScanned}) have no grant statement anywhere in their migrations — no parsed ` +
+      `\`GRANT\`, and no unparsed statement containing the word "grant"; the ${agg.percentRepos.reposMissingGrant}% ` +
+      'figure above is the upper bound.'
+  );
   push('');
 
   push('## Share of tables affected', '');

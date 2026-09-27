@@ -85,6 +85,11 @@ class Replay {
     this.warnings = [];
     this.unparsedByFile = {};
     this.file = null;
+    // For the study's "lower bound" check: did we ever see an actual GRANT
+    // statement (however it was interpreted), or the word "grant" inside a
+    // statement we couldn't parse (a DO block, dynamic SQL, ...)?
+    this.sawGrantStatement = false;
+    this.unparsedContainsGrantKeyword = false;
   }
 
   // An unqualified reference resolves to the first schema on its search path
@@ -120,6 +125,7 @@ class Replay {
     switch (stmt.type) {
       case 'unparsed':
         this.unparsedByFile[this.file] = (this.unparsedByFile[this.file] || 0) + 1;
+        if (/grant/i.test(stmt.raw)) this.unparsedContainsGrantKeyword = true;
         return;
       case 'create_table': {
         const key = tableKey(stmt.schema, stmt.name);
@@ -210,6 +216,7 @@ class Replay {
       }
       case 'grant':
       case 'revoke': {
+        if (stmt.type === 'grant') this.sawGrantStatement = true;
         // A column-level revoke doesn't remove a table-level grant.
         if (stmt.type === 'revoke' && stmt.columnLevel) return;
         if (stmt.target.kind === 'table') {
@@ -255,7 +262,7 @@ class Replay {
 }
 
 // files: [{ name, sql }]. Caller need not pre-sort; replay sorts by name.
-// Returns { tables, functions, warnings, unparsed: { total, byFile } }.
+// Returns { tables, functions, warnings, unparsed: { total, byFile }, sawGrantStatement, unparsedContainsGrantKeyword }.
 export function replayEffectiveState(files) {
   const sorted = [...files].sort((a, b) => compareFileNames(a.name, b.name));
   const replay = new Replay();
@@ -269,6 +276,8 @@ export function replayEffectiveState(files) {
     functions: replay.functions,
     warnings: replay.warnings,
     unparsed: { total: Object.values(byFile).reduce((a, b) => a + b, 0), byFile },
+    sawGrantStatement: replay.sawGrantStatement,
+    unparsedContainsGrantKeyword: replay.unparsedContainsGrantKeyword,
   };
 }
 

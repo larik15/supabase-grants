@@ -271,3 +271,27 @@ test('aggregate: reports the size of the largest group of identical migrations',
   assert.equal(agg.largestDuplicateGroup, 3);
   assert.match(toStudyMarkdown(agg), /largest group is 3 repos/);
 });
+
+test('aggregate: grantLowerBound counts repos with no grant statement anywhere', () => {
+  const agg = aggregateReports([
+    scanned({ saw_grant_statement: true, unparsed_contains_grant_keyword: false }),
+    scanned({ saw_grant_statement: false, unparsed_contains_grant_keyword: true }),
+    scanned({ saw_grant_statement: false, unparsed_contains_grant_keyword: false }),
+    scanned({ saw_grant_statement: false, unparsed_contains_grant_keyword: false }),
+  ]);
+  assert.deepEqual(agg.grantLowerBound, { noGrantCount: 2, reposScanned: 4, percentNoGrant: 50 });
+});
+
+test('aggregate: grantLowerBound treats records without the fields (older scans) as having no grant', () => {
+  const agg = aggregateReports([scanned({}), scanned({ saw_grant_statement: true })]);
+  assert.equal(agg.grantLowerBound.noGrantCount, 1);
+});
+
+test('STUDY.md states the lower bound as a sentence alongside the upper bound', () => {
+  const agg = aggregateReports([
+    scanned({ tables: [{ schema: 'public', name: 'a', rlsEnabled: true }], findings: [{ kind: 'table_without_explicit_grant', table: 'public.a' }], saw_grant_statement: false, unparsed_contains_grant_keyword: false }),
+  ]);
+  const md = toStudyMarkdown(agg);
+  assert.match(md, /Lower bound: 100% of repos \(1 of 1\) have no grant statement anywhere in their migrations/);
+  assert.match(md, /the 100% figure above is the upper bound/);
+});

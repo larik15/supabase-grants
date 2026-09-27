@@ -166,3 +166,27 @@ test('policies on Supabase platform tables (storage.objects, auth.users) are not
   `);
   assert.deepEqual(warnings, []);
 });
+
+// --- lower-bound grant detection for the study -----------------------------
+
+test('sawGrantStatement is true only when an actual GRANT statement was parsed (not REVOKE)', () => {
+  assert.equal(replaySql('create table public.t (id int); grant select on public.t to anon;').sawGrantStatement, true);
+  assert.equal(replaySql('create table public.t (id int); revoke all on public.t from anon;').sawGrantStatement, false);
+  assert.equal(replaySql('create table public.t (id int);').sawGrantStatement, false);
+});
+
+test('sawGrantStatement is true even if the grant targets a table replay never saw (still a warning)', () => {
+  const r = replaySql('grant select on public.ghost to anon;');
+  assert.equal(r.sawGrantStatement, true);
+  assert.equal(r.warnings.length, 1);
+});
+
+test('unparsedContainsGrantKeyword is true only when an unparsed statement contains the word "grant"', () => {
+  assert.equal(replaySql("do $$ begin execute 'grant select on t to anon'; end $$;").unparsedContainsGrantKeyword, true);
+  assert.equal(replaySql("do $$ begin perform 1; end $$;").unparsedContainsGrantKeyword, false);
+  assert.equal(replaySql('select 1;').unparsedContainsGrantKeyword, false);
+});
+
+test('unparsedContainsGrantKeyword is case-insensitive', () => {
+  assert.equal(replaySql("do $$ begin execute 'GRANT select on t to anon'; end $$;").unparsedContainsGrantKeyword, true);
+});

@@ -15,9 +15,18 @@ export function loadSqlFiles(dir) {
 // (see report/json.mjs) ready for toMarkdown()/toJson().
 export function scan(dir, opts = {}) {
   const files = loadSqlFiles(dir);
-  const { tables, functions, warnings, unparsed } = replayEffectiveState(files);
+  const { tables, functions, warnings, unparsed, sawGrantStatement, unparsedContainsGrantKeyword } = replayEffectiveState(files);
   const tablesArr = effectiveStateToArray(tables);
   const functionsArr = functionsToArray(functions);
   const findings = analyzeEffectiveState({ tables: tablesArr, functions: functionsArr }, opts);
-  return toReportData({ source: dir, tables: tablesArr, functions: functionsArr, findings, warnings, unparsed });
+  return toReportData({
+    source: dir,
+    tables: tablesArr,
+    functions: functionsArr,
+    findings,
+    warnings,
+    unparsed,
+    sawGrantStatement,
+    unparsedContainsGrantKeyword,
+  });
 }
