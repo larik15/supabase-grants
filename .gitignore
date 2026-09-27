@@ -1,0 +1,5 @@
+node_modules/
+/study/
+*-report.md
+*.log
+/repos.txt

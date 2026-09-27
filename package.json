@@ -1,0 +1,19 @@
+{
+  "name": "supabase-grants",
+  "version": "0.1.0",
+  "description": "Do your Supabase table GRANTs match what your RLS policies actually allow?",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "supabase-grants": "./bin/supabase-grants.mjs"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
+}
